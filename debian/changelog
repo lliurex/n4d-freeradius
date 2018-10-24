@@ -1,3 +1,9 @@
+n4d-freeradius (0.2.11) bionic; urgency=medium
+
+  * Initial release for bionic
+
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Wed, 24 Oct 2018 14:07:18 +0200
+
 n4d-freeradius (0.2.1) xenial; urgency=high
 
   * Added is_configured method n4d.configuration
