@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+
+if [ "$1" = "remove" ] ; then
+	
+	PKG="n4d-freeradius"
+	
+	ORIGINAL_FILE_PATH="/etc/freeradius"
+        FILES="clients.conf eap.conf users radiusd.conf modules/ldap modules/mschap sites-available/default sites-available/inner-tunnel"
+	
+
+	for F in $FILES; do
+		ORIGINAL_FILE="$ORIGINAL_FILE_PATH/$F"
+		DIVERTED_FILE="$ORIGINAL_FILE.diverted"
+		if [ -f "$DIVERTED_FILE" ]; then
+			rm -rf "$ORIGINAL_FILE" || true
+			dpkg-divert --remove --package ${PKG} --rename --divert "$DIVERTED_FILE" "$ORIGINAL_FILE"
+		fi
+	done
+
+
+fi
+#DEBHELPER#
+
+exit 0

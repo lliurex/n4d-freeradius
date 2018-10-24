@@ -1,0 +1,16 @@
+Source: n4d-freeradius
+Section: admin
+Priority: extra
+Maintainer: Hector Garcia Huerta <lliurex_devel1@edu.gva.es>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.1.2
+Homepage: http://www.lliurex.net
+#Vcs-Svn: http://svn.lliurex.net/trusty/n4d-freeradius/trunk/fuentes
+
+Package: n4d-freeradius
+Architecture: all
+Pre-depends: 
+Depends: ${shlibs:Depends}, ${misc:Depends}, n4d, python-jinja2, python, freeradius, freeradius-ldap
+Description: N4D plugin for configuring radius server
+ This plugin configures freeradius server with some templates
+ 
