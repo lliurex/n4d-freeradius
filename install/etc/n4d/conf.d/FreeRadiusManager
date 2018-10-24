@@ -1,0 +1,13 @@
+[SETUP]
+type=python
+path=FreeRadiusManager.py
+class=FreeRadiusManager
+[METHODS]
+install_conf_files=adm,admins
+enable_group_filtering=adm,admins
+disable_group_filtering=adm,admins
+add_group_to_filter=adm,admins
+remove_group_from_filter=adm,admins
+set_filter_default_auth=adm,admins
+get_allowed_groups=adm,admins
+is_configured=anonymous
