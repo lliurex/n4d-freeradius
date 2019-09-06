@@ -1,0 +1,303 @@
+
+ldap {
+
+	server = "%%SERVER%%"
+	identity = "%%LDAP_USER%%"
+	password = %%LDAP_PASSWORD%%
+	base_dn = "%%LDAP_BASE_DN%%"
+
+	sasl {
+		# SASL mechanism
+#		mech = 'PLAIN'
+
+		# SASL authorisation identity to proxy.
+#		proxy = 'autz_id'
+
+		# SASL realm. Used for kerberos.
+#		realm = 'example.org'
+	}
+
+
+	update {
+		control:Password-With-Header	+= 'userPassword'
+#		control:NT-Password		:= 'ntPassword'
+#		reply:Reply-Message		:= 'radiusReplyMessage'
+#		reply:Tunnel-Type		:= 'radiusTunnelType'
+#		reply:Tunnel-Medium-Type	:= 'radiusTunnelMediumType'
+#		reply:Tunnel-Private-Group-ID	:= 'radiusTunnelPrivategroupId'
+
+		#  Where only a list is specified as the RADIUS attribute,
+		#  the value of the LDAP attribute is parsed as a valuepair
+		#  in the same format as the 'valuepair_attribute' (above).
+		control:			+= 'radiusControlAttribute'
+		request:			+= 'radiusRequestAttribute'
+		reply:				+= 'radiusReplyAttribute'
+	}
+
+	user {
+		base_dn = "${..base_dn}"
+
+		filter = "(uid=%{%{Stripped-User-Name}:-%{User-Name}})"
+
+		sasl {
+
+		}
+
+
+	}
+
+	group {
+		name_attribute=cn
+		base_dn = "${..base_dn}"
+		membership_filter ="(memberUid=%{User-Name})"
+		membership_attribute = 'memberUid'
+	}
+
+
+	profile {
+		#  Filter for RADIUS profile objects
+
+	}
+
+	#
+	#  Bulk load clients from the directory
+	#
+	client {
+		base_dn = "${..base_dn}"
+		filter = '(objectClass=radiusClient)'
+
+		template {
+
+		}
+
+
+		attribute {
+			ipaddr				= 'radiusClientIdentifier'
+			secret				= 'radiusClientSecret'
+#			shortname			= 'radiusClientShortname'
+#			nas_type			= 'radiusClientType'
+#			virtual_server			= 'radiusClientVirtualServer'
+#			require_message_authenticator	= 'radiusClientRequireMa'
+		}
+	}
+
+	#  Load clients on startup
+#	read_clients = no
+
+	#
+	#  Modify user object on receiving Accounting-Request
+	#
+
+	#  Useful for recording things like the last time the user logged
+	#  in, or the Acct-Session-ID for CoA/DM.
+	#
+	#  LDAP modification items are in the format:
+	# 	<ldap attr> <op> <value>
+	#
+	#  Where:
+	#  	<ldap attr>:	The LDAP attribute to add modify or delete.
+	#  	<op>: 		One of the assignment operators:
+	#			(:=, +=, -=, ++).
+	#			Note: '=' is *not* supported.
+	#  	<value>:	The value to add modify or delete.
+	#
+	#  WARNING: If using the ':=' operator with a multi-valued LDAP
+	#  attribute, all instances of the attribute will be removed and
+	#  replaced with a single attribute.
+	accounting {
+		reference = "%{tolower:type.%{Acct-Status-Type}}"
+
+		type {
+			start {
+				update {
+					description := "Online at %S"
+				}
+			}
+
+			interim-update {
+				update {
+					description := "Last seen at %S"
+				}
+			}
+
+			stop {
+				update {
+					description := "Offline at %S"
+				}
+			}
+		}
+	}
+
+	#
+	#  Post-Auth can modify LDAP objects too
+	#
+	post-auth {
+		update {
+			description := "Authenticated at %S"
+		}
+	}
+
+	#
+	#  LDAP connection-specific options.
+	#
+	#  These options set timeouts, keep-alives, etc. for the connections.
+	#
+	options {
+		#  Control under which situations aliases are followed.
+		#  May be one of 'never', 'searching', 'finding' or 'always'
+		#  default: libldap's default which is usually 'never'.
+		#
+		#  LDAP_OPT_DEREF is set to this value.
+#		dereference = 'always'
+
+		#
+		#  The following two configuration items control whether the
+		#  server follows references returned by LDAP directory.
+		#  They are  mostly for Active Directory compatibility.
+		#  If you set these to 'no', then searches will likely return
+		#  'operations error', instead of a useful result.
+		#
+		chase_referrals = yes
+		rebind = yes
+
+		#  Seconds to wait for LDAP query to finish. default: 20
+		res_timeout = 10
+
+		#  Seconds LDAP server has to process the query (server-side
+		#  time limit). default: 20
+		#
+		#  LDAP_OPT_TIMELIMIT is set to this value.
+		srv_timelimit = 3
+
+		#  Seconds to wait for response of the server. (network
+		#  failures) default: 10
+		#
+		#  LDAP_OPT_NETWORK_TIMEOUT is set to this value.
+		net_timeout = 1
+
+		#  LDAP_OPT_X_KEEPALIVE_IDLE
+		idle = 60
+
+		#  LDAP_OPT_X_KEEPALIVE_PROBES
+		probes = 3
+
+		#  LDAP_OPT_X_KEEPALIVE_INTERVAL
+		interval = 3
+
+		#  ldap_debug: debug flag for LDAP SDK
+		#  (see OpenLDAP documentation).  Set this to enable
+		#  huge amounts of LDAP debugging on the screen.
+		#  You should only use this if you are an LDAP expert.
+		#
+		#	default: 0x0000 (no debugging messages)
+		#	Example:(LDAP_DEBUG_FILTER+LDAP_DEBUG_CONNS)
+		ldap_debug = 0x0028
+	}
+
+	#
+	#  This subsection configures the tls related items
+	#  that control how FreeRADIUS connects to an LDAP
+	#  server.  It contains all of the 'tls_*' configuration
+	#  entries used in older versions of FreeRADIUS.  Those
+	#  configuration entries can still be used, but we recommend
+	#  using these.
+	#
+	tls {
+		# Set this to 'yes' to use TLS encrypted connections
+		# to the LDAP database by using the StartTLS extended
+		# operation.
+		#
+		# The StartTLS operation is supposed to be
+		# used with normal ldap connections instead of
+		# using ldaps (port 636) connections
+#		start_tls = yes
+
+#		ca_file	= ${certdir}/cacert.pem
+
+#		ca_path	= ${certdir}
+#		certificate_file = /path/to/radius.crt
+#		private_key_file = /path/to/radius.key
+#		random_file = /dev/urandom
+
+ 		#  Certificate Verification requirements.  Can be:
+		#    'never' (do not even bother trying)
+ 		#    'allow' (try, but don't fail if the certificate
+		#		cannot be verified)
+		#    'demand' (fail if the certificate does not verify)
+		#    'hard'  (similar to 'demand' but fails if TLS
+		#             cannot negotiate)
+ 		#
+		#  The default is libldap's default, which varies based
+		#  on the contents of ldap.conf.
+
+#		require_cert	= 'demand'
+	}
+
+	#  As of version 3.0, the 'pool' section has replaced the
+	#  following configuration items:
+	#
+	#  ldap_connections_number
+
+	#  The connection pool is new for 3.0, and will be used in many
+	#  modules, for all kinds of connection-related activity.
+	#
+	#  When the server is not threaded, the connection pool
+	#  limits are ignored, and only one connection is used.
+	pool {
+		#  Connections to create during module instantiation.
+		#  If the server cannot create specified number of
+		#  connections during instantiation it will exit.
+		#  Set to 0 to allow the server to start without the
+		#  directory being available.
+		start = ${thread[pool].start_servers}
+
+		#  Minimum number of connections to keep open
+		min = ${thread[pool].min_spare_servers}
+
+		#  Maximum number of connections
+		#
+		#  If these connections are all in use and a new one
+		#  is requested, the request will NOT get a connection.
+		#
+		#  Setting 'max' to LESS than the number of threads means
+		#  that some threads may starve, and you will see errors
+		#  like 'No connections available and at max connection limit'
+		#
+		#  Setting 'max' to MORE than the number of threads means
+		#  that there are more connections than necessary.
+		max = ${thread[pool].max_servers}
+
+		#  Spare connections to be left idle
+		#
+		#  NOTE: Idle connections WILL be closed if "idle_timeout"
+		#  is set.  This should be less than or equal to "max" above.
+		spare = ${thread[pool].max_spare_servers}
+
+		#  Number of uses before the connection is closed
+		#
+		#  0 means "infinite"
+		uses = 0
+
+		#  The number of seconds to wait after the server tries
+		#  to open a connection, and fails.  During this time,
+		#  no new connections will be opened.
+		retry_delay = 30
+
+		#  The lifetime (in seconds) of the connection
+		lifetime = 0
+
+		#  Idle timeout (in seconds).  A connection which is
+		#  unused for this length of time will be closed.
+		idle_timeout = 60
+
+		#  NOTE: All configuration settings are enforced.  If a
+		#  connection is closed because of 'idle_timeout',
+		#  'uses', or 'lifetime', then the total number of
+		#  connections MAY fall below 'min'.  When that
+		#  happens, it will open a new connection.  It will
+		#  also log a WARNING message.
+		#
+		#  The solution is to either lower the 'min' connections,
+		#  or increase lifetime/idle_timeout.
+	}
+}
