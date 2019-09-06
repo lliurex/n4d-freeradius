@@ -18,25 +18,25 @@ class FreeRadiusManager:
 	
 	def __init__(self):
 		
-		self.radius_path="/etc/freeradius/"
+		self.radius_path="/etc/freeradius/3.0/"
 		self.templates_path="/usr/share/n4d/templates/n4d-freeradius/"
-		self.groups_file=self.radius_path + "users.lliurex_groups"
+		self.groups_file=self.radius_path + "/mods-config/files/authorize.lliurex_groups"
 		
 		self.groups={}
 		self.diversions={}
 		
 		self.variable_list=["LDAP_BASE_DN","INTERNAL_NETWORK","INTERNAL_MASK"]
 		
-		self.diversions["/etc/freeradius/clients.conf"]="/etc/freeradius/clients.conf.diverted"
-		self.diversions["/etc/freeradius/eap.conf"]="/etc/freeradius/eap.conf.diverted"
-		self.diversions["/etc/freeradius/users"]="/etc/freeradius/users.diverted"
-		self.diversions["/etc/freeradius/radiusd.conf"]="/etc/freeradius/radiusd.conf.diverted"
+		self.diversions["/etc/freeradius/3.0/clients.conf"]="/etc/freeradius/3.0/clients.conf.diverted"
+		#self.diversions["/etc/freeradius/3.0/eap.conf"]="/etc/freeradius/3.0/eap.conf.diverted"
+		self.diversions["/etc/freeradius/3.0/mods-config/files/authorize"]="/etc/freeradius/3.0/mods-config/files/authorize.diverted"
+		self.diversions["/etc/freeradius/3.0/radiusd.conf"]="/etc/freeradius/3.0/radiusd.conf.diverted"
 		
-		self.diversions["/etc/freeradius/modules/ldap"]="/etc/freeradius/modules/ldap.diverted"
-		self.diversions["/etc/freeradius/modules/mschap"]="/etc/freeradius/modules/mschap.diverted"
+		self.diversions["/etc/freeradius/3.0/mods-available/ldap"]="/etc/freeradius/3.0/mods-available/ldap.diverted"
+		self.diversions["/etc/freeradius/3.0/mods-available/mschap"]="/etc/freeradius/3.0/mods-available/mschap.diverted"
 		
-		self.diversions["/etc/freeradius/sites-available/default"]="/etc/freeradius/sites-available/default.diverted"
-		self.diversions["/etc/freeradius/sites-available/inner-tunnel"]="/etc/freeradius/sites-available/inner-tunnel.diverted"
+		self.diversions["/etc/freeradius/3.0/sites-available/default"]="/etc/freeradius/3.0/sites-available/default.diverted"
+		self.diversions["/etc/freeradius/3.0/sites-available/inner-tunnel"]="/etc/freeradius/3.0/sites-available/inner-tunnel.diverted"
 		
 		
 	#def init
@@ -133,7 +133,7 @@ class FreeRadiusManager:
 		os.close(fd)
 		
 		shutil.copy(tmpfile,self.groups_file)
-		self.fix_perms(self.radius_path+"users.lliurex_groups")
+		self.fix_perms(self.groups_file)
 		
 		return True
 		
@@ -275,7 +275,7 @@ class FreeRadiusManager:
 		str_template=template.render(vars).encode("utf-8")
 		clients_str=str_template
 		
-		f=open(self.templates_path+"modules/ldap")
+		f=open(self.templates_path+"mods-available/ldap")
 		lines=f.readlines()
 		f.close()
 		 
@@ -325,40 +325,51 @@ class FreeRadiusManager:
 			
 			# modules/ldap
 			
-			if not os.path.exists(self.radius_path+"modules"):
-				os.makedirs(self.radius_path+"modules")
+			if not os.path.exists(self.radius_path+"mods-available"):
+				os.makedirs(self.radius_path+"mods-available/")
 			
-			f=open(self.radius_path+"modules/ldap","w")
+			
+			f=open(self.radius_path+"mods-available/ldap.lliurex","w")
 			f.write(ldap_str)
 			f.close()
+			self.fix_perms(self.radius_path+"/mods-available/ldap.lliurex")
+			
+						
+			if not os.path.exists(self.radius_path+"mods-enabled/ldap"):
+				os.symlink(self.radius_path+"mods-available/ldap",self.radius_path+"mods-enabled/ldap")
 			
 			# default
 			if not os.path.exists(self.radius_path+"sites-available"):
 				os.makedirs(self.radius_path+"sites-available")
 			
 			shutil.copy(self.templates_path+"sites-available/default",self.radius_path+"sites-available/default.lliurex")
+			self.fix_perms(self.radius_path+"sites-available/default.lliurex")
 			
 			# inner-tunnel
 			shutil.copy(self.templates_path+"sites-available/inner-tunnel",self.radius_path+"sites-available/inner-tunnel.lliurex")
+			self.fix_perms(self.radius_path+"sites-available/inner-tunnel.lliurex")
 			
 			# radiusd.conf
 			shutil.copy(self.templates_path+"radiusd.conf",self.radius_path+"radiusd.conf.lliurex")
 			self.fix_perms(self.radius_path+"radiusd.conf.lliurex")
 			
 			# eap.conf
-			shutil.copy(self.templates_path+"eap.conf",self.radius_path+"eap.conf.lliurex")
-			self.fix_perms(self.radius_path+"eap.conf.lliurex")
+			#shutil.copy(self.templates_path+"eap.conf",self.radius_path+"eap.conf.lliurex")
+			#self.fix_perms(self.radius_path+"eap.conf.lliurex")
 			
-			# users.conf
-			shutil.copy(self.templates_path+"users",self.radius_path+"users.lliurex")
+			# authorize
+			shutil.copy(self.templates_path+"/mods-config/files/authorize",self.radius_path+"/mods-config/files/authorize.lliurex")
+			self.fix_perms(self.radius_path+"/mods-config/files/authorize.lliurex")
 			
 			# user.lliurex_groups
-			shutil.copy(self.templates_path+"users.lliurex_groups",self.radius_path)
-			self.fix_perms(self.radius_path+"users.lliurex_groups")
+			shutil.copy(self.templates_path+"/mods-config/files/authorize.lliurex_groups",self.radius_path+"/mods-config/files")
+			self.fix_perms(self.radius_path+"/mods-config/files/authorize.lliurex_groups")
 			
 			# modules/mschap
-			shutil.copy(self.templates_path+"modules/mschap",self.radius_path+"modules/mschap.lliurex")
-
+			shutil.copy(self.templates_path+"/mods-available/mschap",self.radius_path+"mods-available/mschap.lliurex")
+			self.fix_perms(self.radius_path+"/mods-available/mschap.lliurex")
+			if not os.path.exists(self.radius_path+"mods-enabled/mschap"):
+				os.symlink(self.radius_path+"mods-available/mschap",self.radius_path+"mods-enabled/mschap")
 			
 			self.enable_diversions()		
 	
@@ -381,7 +392,7 @@ class FreeRadiusManager:
 	
 	def fix_perms(self,f):
 		
-		os.system("chown root:freerad %s"%f)
+		os.system("chown freerad:freerad %s"%f)
 		os.system("chmod 640 %s"%f)		
 		
 	#def fix_perms
