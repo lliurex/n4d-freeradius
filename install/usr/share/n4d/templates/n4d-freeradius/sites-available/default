@@ -413,6 +413,14 @@ authorize {
 	#
 	#  The ldap module reads passwords from the LDAP database.
 	-ldap
+	if ((ok || updated) && User-Password ) 	{
+		if (!Control:Auth-Type){
+			update control {
+				Auth-Type := ldap
+			}
+
+		}
+	}
 
 	#
 	#  Enforce daily limits on time spent logged in.
