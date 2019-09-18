@@ -378,6 +378,7 @@ class FreeRadiusManager:
 			self.variable["groups_filter"]["enabled"]=False
 			self.variable["configured"]=True
 			
+			self.enable_systemd()
 			self.save_variable()
 			
 			return {"status":True,"msg":str(True)}
@@ -388,6 +389,11 @@ class FreeRadiusManager:
 			
 		
 	#def install_conf_files
+	
+	
+	def enable_systemd(self):
+		
+		os.system("systemctl enable freeradius")
 	
 	
 	def fix_perms(self,f):
