@@ -155,12 +155,11 @@ authorize {
 	#
 	#  The ldap module reads passwords from the LDAP database.
 	-ldap
-	if ((ok || updated) && User-Password ) 	{
-		if (!Control:Auth-Type){
+	if ((ok || updated)) {
+		if (( &control:Password-With-Header =~ /(.+)/)) {
 			update control {
-				Auth-Type := ldap
+				Password-With-Header := "%{0}"
 			}
-
 		}
 	}
 
