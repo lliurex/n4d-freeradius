@@ -378,6 +378,7 @@ class FreeRadiusManager:
 			self.variable["groups_filter"]["enabled"]=False
 			self.variable["configured"]=True
 			
+			os.systemc("systemctl enable freeradius")
 			self.save_variable()
 			
 			return {"status":True,"msg":str(True)}
