@@ -10,7 +10,7 @@ Homepage: http://www.lliurex.net
 Package: n4d-freeradius
 Architecture: all
 Pre-depends: 
-Depends: ${shlibs:Depends}, ${misc:Depends}, n4d, python-jinja2, python, freeradius, freeradius-ldap
+Depends: ${shlibs:Depends}, ${misc:Depends}, n4d, python3-jinja2, python, freeradius, freeradius-ldap
 Description: N4D plugin for configuring radius server
  This plugin configures freeradius server with some templates
  

@@ -6,11 +6,12 @@ import re
 import tempfile
 import copy
 
-import xmlrpclib as x
+from n4d.server.core import Core
 
 from jinja2 import Environment
 from jinja2.loaders import FileSystemLoader
 
+import n4d.responses 
 
 
 class FreeRadiusManager:
@@ -38,12 +39,12 @@ class FreeRadiusManager:
 		self.diversions["/etc/freeradius/3.0/sites-available/default"]="/etc/freeradius/3.0/sites-available/default.diverted"
 		self.diversions["/etc/freeradius/3.0/sites-available/inner-tunnel"]="/etc/freeradius/3.0/sites-available/inner-tunnel.diverted"
 		
-		
+		self.n4d = Core.get_core()
 	#def init
 	
 	def startup(self,options):
 	
-		self.variable=copy.deepcopy(objects["VariablesManager"].get_variable("FREERADIUS"))
+		self.variable=copy.deepcopy(self.n4d.get_variable("FREERADIUS").get('return'))
 		
 		if self.variable==None:
 			
@@ -55,7 +56,7 @@ class FreeRadiusManager:
 			self.variable["groups_filter"]["default_auth"]=None
 			
 			try:
-				objects["VariablesManager"].add_variable("FREERADIUS",copy.deepcopy(self.variable),"","Freeradius service variable","n4d-freeradius")
+				self.n4d.set_variable("FREERADIUS",copy.deepcopy(self.variable),{'description':"Freeradius service variable",'package':"n4d-freeradius"})
 			except:
 				# If this fails, something is horribly wrong and we have bigger problems than this variable not being saved
 				# Hopefully we'll be able to do it later, anyway
@@ -71,7 +72,7 @@ class FreeRadiusManager:
 
 	def is_configured(self):
 
-		return self.variable["configured"]
+		return n4d.responses.build_successful_call_response(self.variable["configured"])
 
 	#def is_configured
 
@@ -101,8 +102,11 @@ class FreeRadiusManager:
 
 		groups=self.parse_groups_file()
 		if len(groups) < 1:
-			groups=self.variable["groups_filter"]["groups"]
-		return {"status":True,"msg":groups.keys()}
+			try:
+				groups=self.variable["groups_filter"]["groups"]
+			except Exception as e:
+				return n4d.responses.build_failed_call_response(ret_msg=str(e))
+		return n4d.responses.build_successful_call_response(list(groups.keys()))
 
 	#def get_allowed_groups
 	
@@ -116,7 +120,10 @@ class FreeRadiusManager:
 		extra_auth=", Auth-Type := EAP"
 				
 		if not groups:
-			groups=self.variable["groups_filter"]["groups"]
+			try:
+				groups=self.variable["groups_filter"]["groups"]
+			except Exception as e:
+				return False
 			
 		fd,tmpfile=tempfile.mkstemp()
 		f=open(tmpfile,"w")
@@ -151,32 +158,43 @@ class FreeRadiusManager:
 	
 	def set_filter_default_auth(self,auth_type=None):
 		
-		if not self.variable["groups_filter"]["enabled"]:
-			return {"msg":False,"status":"Filter not enabled"}
+		try:
+			if not self.variable["groups_filter"]["enabled"]:
+				return n4d.responses.build_successful_call_response(ret_value=False,ret_msg="Filter not enabled")
+				# return {"msg":False,"status":"Filter not enabled"}
+		except Exception as e:
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
 		
-		self.variable["groups_filter"]["default_auth"]=auth_type
-		
-		for group in self.variable["groups_filter"]["groups"]:
-			self.variable["groups_filter"]["groups"][group]=auth_type
-				
+		try:
+			self.variable["groups_filter"]["default_auth"]=auth_type
+			
+			for group in self.variable["groups_filter"]["groups"]:
+				self.variable["groups_filter"]["groups"][group]=auth_type
+		except Exception as e:
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
+
 		self.generate_groups_file()
 		self.restart_service()
 		
 		self.save_variable()
 		
-		return {"status":True,"msg":"auth configured"}
+		return n4d.responses.build_successful_call_response(ret_value=True,ret_msg="auth configured")
+		# return {"status":True,"msg":"auth configured"}
 		
 	#def set_filter_default_auth
 	
 	
 	def add_group_to_filter(self,group,extra_auth=None):
+		try:
+			if not self.variable["groups_filter"]["enabled"]:
+				return n4d.responses.build_successful_call_response(ret_value=False,ret_msg="Filter not enabled")
+				# return {"status":False,"msg":"Filter not enabled"}
 		
-		if not self.variable["groups_filter"]["enabled"]:
-			return {"status":False,"msg":"Filter not enabled"}
-			
-		if extra_auth==None:
-			extra_auth=self.variable["groups_filter"]["default_auth"]
-		
+			if extra_auth==None:
+				extra_auth=self.variable["groups_filter"]["default_auth"]
+		except Exception as e:
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
+
 		groups=self.parse_groups_file()
 		
 		if group not in groups or groups[group]!=extra_auth:
@@ -186,17 +204,20 @@ class FreeRadiusManager:
 		self.save_variable()
 		self.restart_service()
 		
-		return {"status":True,"msg":"Group added"}
+		return n4d.responses.build_successful_call_response(ret_value=True,ret_msg="Group added")
+		# return {"status":True,"msg":"Group added"}
 		
 		
 	#def add_group_to_filter
 	
 	
 	def remove_group_from_filter(self,group):
-		
-		if not self.variable["groups_filter"]["enabled"]:
-			return {"status":False,"msg":"Filter not enabled"}
-		
+		try:
+			if not self.variable["groups_filter"]["enabled"]:
+				return n4d.responses.build_successful_call_response(ret_value=False,ret_msg="Filter not enabled")
+		except Exception as e:
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
+
 		groups=self.parse_groups_file()
 		
 		if group in groups:
@@ -207,7 +228,8 @@ class FreeRadiusManager:
 		self.restart_service()
 		self.save_variable()
 		
-		return {"status":True, "msg": "Group removed"}
+		return n4d.responses.build_successful_call_response(ret_value=True,ret_msg="Group removed")
+		# return {"status":True, "msg": "Group removed"}
 		
 	#def remove_group_from_filter
 	
@@ -220,7 +242,8 @@ class FreeRadiusManager:
 		self.save_variable()
 		self.restart_service()
 		
-		return {"status":True,"msg":""}
+		return n4d.responses.build_successful_call_response(True)
+		#return {"status":True,"msg":""}
 		
 	#def enable_filtering
 	
@@ -231,24 +254,25 @@ class FreeRadiusManager:
 		groups=self.parse_groups_file()
 		# save groups in local variable only if it has content
 		# rely on variable groups value if it doesn't
-		if len(groups)>0:
-			self.variable["groups_filter"]["groups"]=groups
-		
-		self.clean_groups_file()
-		self.variable["groups_filter"]["enabled"]=False
+		try:
+			if len(groups)>0:
+				self.variable["groups_filter"]["groups"]=groups
+			
+			self.clean_groups_file()
+			self.variable["groups_filter"]["enabled"]=False
+		except Exception as e:
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
 		
 		self.save_variable()
 		self.restart_service()
 		
-		return {"status":True,"msg":""}
+		return n4d.responses.build_successful_call_response(True)
 		
 	#def empty_groups_file
 	
 	
 	def save_variable(self):
-		
-		objects["VariablesManager"].set_variable("FREERADIUS",copy.deepcopy(self.variable))
-		
+		self.n4d.set_variable("FREERADIUS",copy.deepcopy(self.variable),{'description':"Freeradius service variable",'package':"n4d-freeradius"})
 	#def save_variable
 	
 	def restart_service(self):
@@ -261,7 +285,7 @@ class FreeRadiusManager:
 	def render_templates(self,server,radius_secret,ldap_user,ldap_pwd,router_ip):
 		
 	
-		vars=objects["VariablesManager"].get_variable_list(self.variable_list)
+		vars=self.n4d.get_variable_list(self.variable_list).get('return')
 		
 		vars["RADIUS_SECRET"]=radius_secret
 		vars["LDAP_USER"]=ldap_user
@@ -272,7 +296,7 @@ class FreeRadiusManager:
 		env = Environment(loader=FileSystemLoader(self.templates_path))
 
 		template=env.get_template("clients.conf")
-		str_template=template.render(vars).encode("utf-8")
+		str_template=template.render(vars)
 		clients_str=str_template
 		
 		f=open(self.templates_path+"mods-available/ldap")
@@ -381,11 +405,12 @@ class FreeRadiusManager:
 			self.enable_systemd()
 			self.save_variable()
 			
-			return {"status":True,"msg":str(True)}
+			return n4d.responses.build_successful_call_response(True)
+			# return {"status":True,"msg":str(True)}
 			
 		except Exception as e:
-			
-			return {"status":False,"msg":str(e)}
+			return n4d.responses.build_failed_call_response(ret_msg=str(e))
+			# return {"status":False,"msg":str(e)}
 			
 		
 	#def install_conf_files

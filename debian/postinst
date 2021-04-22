@@ -21,7 +21,7 @@ set -e
 case "$1" in
     configure)
 
-	n4d-modules enable-plugin /etc/n4d/conf.d/FreeRadiusManager || true
+	n4d-modules enable-plugin /etc/n4d/conf.d/FreeRadiusManager.json || true
 
 	;;
 

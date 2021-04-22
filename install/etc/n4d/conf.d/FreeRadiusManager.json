@@ -1,0 +1,57 @@
+{
+    "SETUP": {
+        "type": "python",
+        "path": "FreeRadiusManager.py",
+        "class": "FreeRadiusManager"
+    },
+    "METHODS": {
+        "install_conf_files": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "enable_group_filtering": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "disable_group_filtering": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "add_group_to_filter": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "remove_group_from_filter": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "set_filter_default_auth": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "get_allowed_groups": {
+            "allowed_groups": [
+                "sudo",
+                "admins"
+            ]
+        },
+        "is_configured": {
+            "allowed_groups": [
+                "*",
+                "anonymous"
+            ]
+        }
+    }
+}

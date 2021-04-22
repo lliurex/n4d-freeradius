@@ -1,3 +1,9 @@
+n4d-freeradius (0.3.3) focal; urgency=medium
+
+  * Focal port
+
+ -- M.Angel Juan <m.angel.juan@gmail.com>  Thu, 22 Apr 2021 13:25:36 +0200
+
 n4d-freeradius (0.3.3) bionic; urgency=medium
 
   * Added function to enable freeradius unit
